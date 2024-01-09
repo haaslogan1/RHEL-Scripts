@@ -59,33 +59,33 @@ Examples with real input:
 ./backup.sh usage
 
 
-"
+" 
+	exit 1
 }
 
 # Parse CLI args
 parse_arguments() {
 	
-	echo "$#"
 
-	if test "$#" -eq 0; then
-    	err "Must specify command line arguments"
-	print_usage
-        exit 1
-    fi
+	if [ "$#" -eq 0 ] ; then
+    		err "Must specify command line arguments"
+			print_usage
+        	exit 1
+    	fi
 	case ${1} in
-	daily)
-		DAILY=true
-		;;
-	weekly)
-		WEEKLY=true
-		;;
-	monthly)
-		MONTHLY=true
-		;;
-	yearly)
-		TERMINATE=true
-		;;
-	*)
+		daily)
+			DAILY=true
+			;;
+		weekly)
+			WEEKLY=true
+			;;
+		monthly)
+			MONTHLY=true
+			;;
+		yearly)
+			YEARLY=true
+			;;
+		*)
 		err "Argument 1 must specify one of the following: daily, weekly, monthly, yearly" 
 		print_usage
 		exit 1
@@ -96,45 +96,45 @@ parse_arguments() {
 daily() {
 	info "daily"
 
-	if [["$#" != 2]]; then
+	if  [ "$#" != 2 ]; then
+		err "Must include only two arguments for the daily option, not "$#" arguments"		
 		print_usage
 	fi
 	
-	if echo ${1} | grep -q  "[0-9]+:[0-9]+"; then
+	if echo ${2} | grep -q -E  "[0-9]+:[0-9]+"; then
 		# Using the internal field seperator (IFS) variable to split the time into hours and mins
-		IFS=':' read -ra TIME <<< ${1}
+		IFS=':' read -ra TIME <<< ${2}
 		
-		HOUR = ${TIME[0]}
-		MIN = ${TIME[1]}
+		HOUR=${TIME[0]}
+		MIN=${TIME[1]}
 	else
+		err "time format must be: [0-9]+:[0-9]+. Not "${2}.""
 		print_usage
 	fi
+
+	echo "$HOUR\n$MIN"
 	
-	if [ "$HOUR" -gt 23]; then
-		echo "
-ERROR: the time cannnot be above 23 hours.
-"
+	if [ "$HOUR" -gt 23 ]; then
+		err " the time cannnot be above 23 hours."
 		print_usage
-	elif [ "$HOUR" -lt 0]; then
-			echo "
-ERROR: the time cannnot be below 0 hours.
-"
+	elif [ "$HOUR" -lt 0 ]; then
+			err " the time cannnot be below 0 hours."
 		print_usage
-	elif [ "$MIN" -lt 0]; then
-			echo "
-ERROR: the time must be between 0 and 59 minutes.
-"
+	elif [ "$MIN" -lt 0 ]; then
+		err "the minue must be between 0 and 59 minutes."
 		print_usage
-	elif [ "$MIN" -gt 59]; then
-			echo "
-ERROR: the time must be between 0 and 59 minutes.
-"
+	elif [ "$MIN" -gt 59 ]; then
+		err "the time must be between 0 and 59 minutes."
 		print_usage
 	fi
-	
-	# Create the backup directory for the new backup
-	(mkdir /home/${USER}/automatedBackups)
-	
+	if [ $USER == "root" ]; then
+		# Create the backup directory for the new backup
+        	(mkdir /${USER}/automatedBackups)		
+	else
+		# Create the backup directory for the new backup
+		(mkdir /home/${USER}/automatedBackups)
+	fi
+
 	# Clear the directory and add a new backup once per day at the given mins and hours
 	(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * * rm -rf /home/${USER}/automatedBackups/*; cp /home/${USER}/* /home/${USER}/automatedBackups/") | crontab -	
 	
@@ -153,10 +153,10 @@ ERROR: the time must be between 0 and 59 minutes.
 # }
 
 main() {
-	parse_arguments
+	parse_arguments "$@"
 	if $DAILY; then
 		info "made it!"
-		daily
+		daily "$@"
 # 	elif $WEEKLY; then
 # 		weekly
 # 	elif $MONTHLY; then
