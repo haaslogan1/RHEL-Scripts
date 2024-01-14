@@ -49,13 +49,15 @@ print_usage() {
 	
 Examples:
 ./backup.sh daily military_time
-./backup.sh monthly day-of-week military_time
+./backup.sh weekly day-of-week miliary_time
+./backup.sh monthly day-of-month military_time
 ./backup.sh yearly month/day military_time
 ./backup.sh usage	
 
 
 Examples with real input:
 ./backup.sh daily 13:00
+./backup.sh weekly Mon 13:00
 ./backup.sh monthly 1 13:00
 ./backup.sh yearly 1/12 13:00
 ./backup.sh usage
@@ -154,10 +156,64 @@ daily() {
 	(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * * rm -rf /home/${USER}/automatedBackups/*; cp /home/${USER}/* /home/${USER}/automatedBackups/") | crontab -	
 	
 }
-# 
-# weekly() {
-# 
-# }
+
+# create a weekly cron task to back up directories  
+weekly() {
+	
+	# we need exactly three args after the filepath
+	if  [ "$#" != 3 ]; then
+		err "Must include only two arguments for the daily option, not "$#" arguments"		
+		print_usage
+	fi
+
+
+	# ensure that the second arg matches a time
+	if echo ${3} | grep -q -E  "[0-9]+:[0-9]+"; then
+		# Using the internal field seperator (IFS) variable to split the time into hours and mins
+		IFS=':' read -ra TIME <<< ${3}
+		
+		# set the hour and min global variables
+		HOUR=${TIME[0]}
+		MIN=${TIME[1]}
+	
+	else
+		# end the script as the format is not correct
+		err "time format must be: [0-9]+:[0-9]+. Not "${2}.""
+		print_usage
+	fi
+
+	# check for an invalid hour portion of the time stamp
+	if [ "$HOUR" -gt 23 ]; then
+		err " the time cannnot be above 23 hours."
+		print_usage
+	# check for an invalid hour portion of the time stamp
+	elif [ "$HOUR" -lt 0 ]; then
+		err " the time cannnot be below 0 hours."
+		print_usage
+	# check for an invalid min portion of the time stamp
+	elif [ "$MIN" -lt 0 ]; then
+		err "the minue must be between 0 and 59 minutes."
+		print_usage
+	#  check for an invalid min portion of the time stamp
+	elif [ "$MIN" -gt 59 ]; then
+		err "the time must be between 0 and 59 minutes."
+		print_usage
+	fi
+	
+	# check if the user is root (different home directory)
+	if [ $USER == "root" ]; then
+		# Create the backup directory for the new backup
+        	(mkdir /${USER}/automatedBackups)
+		# Clear the directory and add a new backup once per day at the given mins and hours
+		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * ${2} rm -rf /${USER}/automatedBackups/*; cp /${USER}/* /${USER}/automatedBackups/") | crontab -	
+	else
+		# Create the backup directory for the new backup
+		(mkdir /home/${USER}/automatedBackups)
+		# Clear the directory and add a new backup once per day at the given mins and hours
+		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * ${2} rm -rf /home/${USER}/automatedBackups/*; cp /home/${USER}/* /home/${USER}/automatedBackups/") | crontab -
+	fi
+	
+}
 # 
 # monthly() {
 # 
@@ -170,10 +226,9 @@ daily() {
 main() {
 	parse_arguments "$@"
 	if $DAILY; then
-		info "made it!"
 		daily "$@"
-# 	elif $WEEKLY; then
-# 		weekly
+	elif $WEEKLY; then
+ 		weekly "$@"
 # 	elif $MONTHLY; then
 # 		monthly
 # 	elif $YEARLY; then
