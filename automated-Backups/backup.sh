@@ -146,10 +146,10 @@ daily() {
 	# check if the user is root (different home directory)
 	if [ $USER == "root" ]; then
 		# Create the backup directory for the new backup
-        	(mkdir /${USER}/automatedBackups)		
+        	(mkdir /${USER}/automatedBackups 2> /dev/null)		
 	else
 		# Create the backup directory for the new backup
-		(mkdir /home/${USER}/automatedBackups)
+		(mkdir /home/${USER}/automatedBackups 2> /dev/null)
 	fi
 
 	# Clear the directory and add a new backup once per day at the given mins and hours
@@ -203,14 +203,14 @@ weekly() {
 	# check if the user is root (different home directory)
 	if [ $USER == "root" ]; then
 		# Create the backup directory for the new backup
-        	(mkdir /${USER}/automatedBackups)
+		(mkdir /${USER}/automatedBackups 2> /dev/null)
 		# Clear the directory and add a new backup once per day at the given mins and hours
-		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * ${2} rm -rf /${USER}/automatedBackups/*; cp /${USER}/* /${USER}/automatedBackups/") | crontab -	
+		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * ${2} rm -rf /${USER}/automatedBackups/*; tar -czf /${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz /${USER}/ ") | crontab -	
 	else
 		# Create the backup directory for the new backup
-		(mkdir /home/${USER}/automatedBackups)
+		(mkdir /home/${USER}/automatedBackups 2> /dev/null)
 		# Clear the directory and add a new backup once per day at the given mins and hours
-		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * ${2} rm -rf /home/${USER}/automatedBackups/*; cp /home/${USER}/* /home/${USER}/automatedBackups/") | crontab -
+		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * ${2} rm -rf /home/${USER}/automatedBackups/*; tar -czf  /home/${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz  /home/${USER}/ ") | crontab -
 	fi
 	
 }
