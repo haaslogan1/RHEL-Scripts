@@ -157,6 +157,8 @@ daily() {
 	
 }
 
+# Evample: weekly use case:
+# /backup.sh weekly Mon 13:00
 # create a weekly cron task to back up directories  
 weekly() {
 	
@@ -214,6 +216,72 @@ weekly() {
 	fi
 	
 }
+
+
+
+
+# Example: monthly use case:
+# ./backup.sh monthly 1 13:00
+# create a weekly cron task to back up directories  
+monthly() {
+	
+	# we need exactly three args after the filepath
+	if  [ "$#" != 3 ]; then
+		err "Must include only two arguments for the daily option, not "$#" arguments"		
+		print_usage
+	fi
+
+
+	# ensure that the second arg matches a time
+	if echo ${3} | grep -q -E  "[0-9]+:[0-9]+"; then
+		# Using the internal field seperator (IFS) variable to split the time into hours and mins
+		IFS=':' read -ra TIME <<< ${3}
+		
+		# set the hour and min global variables
+		HOUR=${TIME[0]}
+		MIN=${TIME[1]}
+	
+	else
+		# end the script as the format is not correct
+		err "time format must be: [0-9]+:[0-9]+. Not "${2}.""
+		print_usage
+	fi
+
+	# check for an invalid hour portion of the time stamp
+	if [ "$HOUR" -gt 23 ]; then
+		err " the time cannnot be above 23 hours."
+		print_usage
+	# check for an invalid hour portion of the time stamp
+	elif [ "$HOUR" -lt 0 ]; then
+		err " the time cannnot be below 0 hours."
+		print_usage
+	# check for an invalid min portion of the time stamp
+	elif [ "$MIN" -lt 0 ]; then
+		err "the minue must be between 0 and 59 minutes."
+		print_usage
+	#  check for an invalid min portion of the time stamp
+	elif [ "$MIN" -gt 59 ]; then
+		err "the time must be between 0 and 59 minutes."
+		print_usage
+	fi
+	
+	# check if the user is root (different home directory)
+	if [ $USER == "root" ]; then
+		# Create the backup directory for the new backup
+		(mkdir /${USER}/automatedBackups 2> /dev/null)
+		# Clear the directory and add a new backup once per day at the given mins and hours
+		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${2} * * rm -rf /${USER}/automatedBackups/*; tar -czf /${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz /${USER}/ ") | crontab -	
+	else
+		# Create the backup directory for the new backup
+		(mkdir /home/${USER}/automatedBackups 2> /dev/null)
+		# Clear the directory and add a new backup once per day at the given mins and hours
+		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${2} * * rm -rf /home/${USER}/automatedBackups/*; tar -czf  /home/${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz  /home/${USER}/ ") | crontab -
+	fi
+	
+}
+
+
+
 # 
 # monthly() {
 # 
