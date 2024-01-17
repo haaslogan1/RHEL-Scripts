@@ -297,8 +297,8 @@ main() {
 		daily "$@"
 	elif $WEEKLY; then
  		weekly "$@"
-# 	elif $MONTHLY; then
-# 		monthly
+ 	elif $MONTHLY; then
+ 		monthly "$@"
 # 	elif $YEARLY; then
 # 		yearly
  	fi
