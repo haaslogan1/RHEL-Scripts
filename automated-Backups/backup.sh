@@ -28,6 +28,10 @@ USAGE=false
 HOUR=0
 # Time in minutes
 MIN=0 
+# Month
+MONTH=0
+# Day in numeric form
+DAY=0
 
 # (crontab -l 2>/dev/null; echo "*/5 * * * * /path/to/job -with args") | crontab -
 
@@ -175,8 +179,8 @@ weekly() {
 		IFS=':' read -ra TIME <<< ${3}
 		
 		# set the hour and min global variables
-		HOUR=${TIME[0]}
-		MIN=${TIME[1]}
+		MONTH=${TIME[0]}
+		DAY=${TIME[1]}
 	
 	else
 		# end the script as the format is not correct
@@ -282,14 +286,96 @@ monthly() {
 
 
 
-# 
-# monthly() {
-# 
-# }
-# 
-# yearly() {
-# 
-# }
+
+# Example Use Case: 
+# ./backup.sh yearly 1/12 13:00
+yearly() {
+	# we need exactly three args after the filepath
+	if  [ "$#" != 4 ]; then
+		err "Must include only two arguments for the daily option, not "$#" arguments"		
+		print_usage
+	fi
+
+
+	# ensure that the second arg matches a time
+	if echo ${3} | grep -q -E  "[0-9]+:/[0-9]+"; then
+		# Using the internal field seperator (IFS) variable to split the time into hours and mins
+		IFS=':' read -ra DATE <<< ${3}
+		
+		# set the hour and min global variables
+		MONTH=${DATE[0]}
+		DAY=${DATE[1]}
+	
+	else
+		# end the script as the format is not correct
+		err "time format must be: [0-9]+:[0-9]+. Not "${2}.""
+		print_usage
+	fi
+	
+	# check for an invalid day portion of the time stamp
+	if [ "$DAY" -gt 31 ]; then
+		err " the time cannnot be above 23 hours."
+		print_usage
+	# check for an invalid day portion of the time stamp
+	elif [ "$DAY" -lt 0 ]; then
+		err " the time cannnot be below 0 hours."
+		print_usage
+	# check for an invalid month portion of the time stamp
+	elif [ "$MONTH" -lt 0 ]; then
+		err "the minue must be between 0 and 59 minutes."
+		print_usage
+	#  check for an invalid month portion of the time stamp
+	elif [ "$MONTH" -gt 12 ]; then
+		err "the time must be between 0 and 59 minutes."
+		print_usage
+	fi
+	
+	# ensure that the second arg matches a time
+	if echo ${4} | grep -q -E  "[0-9]+:[0-9]+"; then
+		# Using the internal field seperator (IFS) variable to split the time into hours and mins
+		IFS=':' read -ra TIME <<< ${4}
+		
+		# set the hour and min global variables
+		HOUR=${TIME[0]}
+		MIN=${TIME[1]}
+	
+	else
+		# end the script as the format is not correct
+		err "time format must be: [0-9]+:[0-9]+. Not "${2}.""
+		print_usage
+	fi
+
+	# check for an invalid hour portion of the time stamp
+	if [ "$HOUR" -gt 23 ]; then
+		err " the time cannnot be above 23 hours."
+		print_usage
+	# check for an invalid hour portion of the time stamp
+	elif [ "$HOUR" -lt 0 ]; then
+		err " the time cannnot be below 0 hours."
+		print_usage
+	# check for an invalid min portion of the time stamp
+	elif [ "$MIN" -lt 0 ]; then
+		err "the minue must be between 0 and 59 minutes."
+		print_usage
+	#  check for an invalid min portion of the time stamp
+	elif [ "$MIN" -gt 59 ]; then
+		err "the time must be between 0 and 59 minutes."
+		print_usage
+	fi
+	
+	# check if the user is root (different home directory)
+	if [ $USER == "root" ]; then
+		# Create the backup directory for the new backup
+		(mkdir /${USER}/automatedBackups 2> /dev/null)
+		# Clear the directory and add a new backup once per day at the given mins and hours
+		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${DAY} ${MONTH} * rm -rf /${USER}/automatedBackups/*; tar -czf /${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz /${USER}/ ") | crontab -	
+	else
+		# Create the backup directory for the new backup
+		(mkdir /home/${USER}/automatedBackups 2> /dev/null)
+		# Clear the directory and add a new backup once per day at the given mins and hours
+		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${DAY} ${MONTH} * rm -rf /home/${USER}/automatedBackups/*; tar -czf  /home/${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz  /home/${USER}/ ") | crontab -
+	fi
+}
 
 main() {
 	parse_arguments "$@"
@@ -299,8 +385,8 @@ main() {
  		weekly "$@"
  	elif $MONTHLY; then
  		monthly "$@"
-# 	elif $YEARLY; then
-# 		yearly
+	elif $YEARLY; then
+		yearly "$@"
  	fi
 	exit 0
 }
