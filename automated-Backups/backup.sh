@@ -291,49 +291,54 @@ monthly() {
 # ./backup.sh yearly 1/12 13:00
 yearly() {
 	# we need exactly three args after the filepath
-	if  [ "$#" != 4 ]; then
+	if  [ "$#" != 3 ]; then
 		err "Must include only two arguments for the daily option, not "$#" arguments"		
 		print_usage
 	fi
 
 
 	# ensure that the second arg matches a time
-	if echo ${3} | grep -q -E  "[0-9]+:/[0-9]+"; then
+	if echo ${2} | grep -q -E  "[0-9]+/[0-9]+"; then
 		# Using the internal field seperator (IFS) variable to split the time into hours and mins
-		IFS=':' read -ra DATE <<< ${3}
+		IFS='/' read -ra DATE <<< ${2}
 		
+		echo "${2}"
+
 		# set the hour and min global variables
 		MONTH=${DATE[0]}
 		DAY=${DATE[1]}
 	
 	else
 		# end the script as the format is not correct
-		err "time format must be: [0-9]+:[0-9]+. Not "${2}.""
+		err "date format must be: [0-9]+/[0-9]+. Not "${2}.""
 		print_usage
 	fi
+
+	echo "${MONTH}"
+	echo "${DAY}"
 	
 	# check for an invalid day portion of the time stamp
 	if [ "$DAY" -gt 31 ]; then
-		err " the time cannnot be above 23 hours."
+		err " the date cannnot be above 31 days."
 		print_usage
 	# check for an invalid day portion of the time stamp
-	elif [ "$DAY" -lt 0 ]; then
-		err " the time cannnot be below 0 hours."
+	elif [ "$DAY" -lt 1 ]; then
+		err " the date cannnot be less than the first day of the month."
 		print_usage
 	# check for an invalid month portion of the time stamp
-	elif [ "$MONTH" -lt 0 ]; then
-		err "the minue must be between 0 and 59 minutes."
+	elif [ "$MONTH" -lt 1 ]; then
+		err "the month must be between 1-12 (January to December)."
 		print_usage
 	#  check for an invalid month portion of the time stamp
 	elif [ "$MONTH" -gt 12 ]; then
-		err "the time must be between 0 and 59 minutes."
+		err "the month must be between 1-12 (January to December)"
 		print_usage
 	fi
 	
 	# ensure that the second arg matches a time
-	if echo ${4} | grep -q -E  "[0-9]+:[0-9]+"; then
+	if echo ${3} | grep -q -E  "[0-9]+:[0-9]+"; then
 		# Using the internal field seperator (IFS) variable to split the time into hours and mins
-		IFS=':' read -ra TIME <<< ${4}
+		IFS=':' read -ra TIME <<< ${3}
 		
 		# set the hour and min global variables
 		HOUR=${TIME[0]}
@@ -341,7 +346,7 @@ yearly() {
 	
 	else
 		# end the script as the format is not correct
-		err "time format must be: [0-9]+:[0-9]+. Not "${2}.""
+		err "time format must be: [0-9]+:[0-9]+. Not "${3}.""
 		print_usage
 	fi
 
