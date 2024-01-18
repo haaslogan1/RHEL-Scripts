@@ -25,13 +25,13 @@ YEARLY=false
 # the user wants to learn about how to use this script
 USAGE=false
 # Time in hours
-HOUR=0
+HOUR=*
 # Time in minutes
-MIN=0 
+MIN=*
 # Month
-MONTH=0
+MONTH=*
 # Day in numeric form
-DAY=0
+DAY=*
 
 # (crontab -l 2>/dev/null; echo "*/5 * * * * /path/to/job -with args") | crontab -
 
