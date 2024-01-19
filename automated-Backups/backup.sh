@@ -32,6 +32,8 @@ MIN=*
 MONTH=*
 # Day in numeric form
 DAY=*
+# Day in alphabetic format
+WEEKDAY=*
 
 # (crontab -l 2>/dev/null; echo "*/5 * * * * /path/to/job -with args") | crontab -
 
@@ -69,6 +71,60 @@ Examples with real input:
 
 " 
 	exit 1
+}
+
+#Create the actual cron job
+createCron() {
+	# check for an invalid day portion of the time stamp
+	if [ "$DAY" -gt 31 ]; then
+		err " the date cannnot be above 31 days."
+		print_usage
+	# check for an invalid day portion of the time stamp
+	elif [ "$DAY" -lt 1 ]; then
+		err " the date cannnot be less than the first day of the month."
+		print_usage
+	# check for an invalid month portion of the time stamp
+	elif [ "$MONTH" -lt 1 ]; then
+		err "the month must be between 1-12 (January to December)."
+		print_usage
+	#  check for an invalid month portion of the time stamp
+	elif [ "$MONTH" -gt 12 ]; then
+		err "the month must be between 1-12 (January to December)"
+		print_usage
+	fi
+	
+	
+	# check for an invalid hour portion of the time stamp
+	if [ "$HOUR" -gt 23 ]; then
+		err " the time cannnot be above 23 hours."
+		print_usage
+	# check for an invalid hour portion of the time stamp
+	elif [ "$HOUR" -lt 0 ]; then
+		err " the time cannnot be below 0 hours."
+		print_usage
+	# check for an invalid min portion of the time stamp
+	elif [ "$MIN" -lt 0 ]; then
+		err "the minue must be between 0 and 59 minutes."
+		print_usage
+	#  check for an invalid min portion of the time stamp
+	elif [ "$MIN" -gt 59 ]; then
+		err "the time must be between 0 and 59 minutes."
+		print_usage
+	fi
+	
+	# check if the user is root (different home directory)
+	if [ $USER == "root" ]; then
+		# Create the backup directory for the new backup
+		(mkdir /${USER}/automatedBackups 2> /dev/null)	
+		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${DAY} ${MONTH} ${WEEKDAY} rm -rf /${USER}/automatedBackups/*; tar -czf /${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz /${USER}/ ") | crontab -	
+	else
+		# Create the backup directory for the new backup
+		(mkdir /home/${USER}/automatedBackups 2> /dev/null)
+		 (crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${DAY} ${MONTH} ${WEEKDAY} rm -rf /home/${USER}/automatedBackups/*; tar -czf  /home/${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz  /home/${USER}/ ") | crontab -
+	fi
+
+	
+	
 }
 
 # Parse CLI args
@@ -129,35 +185,7 @@ daily() {
 		print_usage
 	fi
 
-	# check for an invalid hour portion of the time stamp
-	if [ "$HOUR" -gt 23 ]; then
-		err " the time cannnot be above 23 hours."
-		print_usage
-	# check for an invalid hour portion of the time stamp
-	elif [ "$HOUR" -lt 0 ]; then
-		err " the time cannnot be below 0 hours."
-		print_usage
-	# check for an invalid min portion of the time stamp
-	elif [ "$MIN" -lt 0 ]; then
-		err "the minue must be between 0 and 59 minutes."
-		print_usage
-	#  check for an invalid min portion of the time stamp
-	elif [ "$MIN" -gt 59 ]; then
-		err "the time must be between 0 and 59 minutes."
-		print_usage
-	fi
-	
-	# check if the user is root (different home directory)
-	if [ $USER == "root" ]; then
-		# Create the backup directory for the new backup
-        	(mkdir /${USER}/automatedBackups 2> /dev/null)		
-	else
-		# Create the backup directory for the new backup
-		(mkdir /home/${USER}/automatedBackups 2> /dev/null)
-	fi
-
-	# Clear the directory and add a new backup once per day at the given mins and hours
-	(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * * rm -rf /home/${USER}/automatedBackups/*; cp /home/${USER}/* /home/${USER}/automatedBackups/") | crontab -	
+	createCron
 	
 }
 
@@ -180,7 +208,7 @@ weekly() {
 		
 		# set the hour and min global variables
 		MONTH=${TIME[0]}
-		DAY=${TIME[1]}
+		WEEKDAY=${TIME[1]}
 	
 	else
 		# end the script as the format is not correct
@@ -188,37 +216,8 @@ weekly() {
 		print_usage
 	fi
 
-	# check for an invalid hour portion of the time stamp
-	if [ "$HOUR" -gt 23 ]; then
-		err " the time cannnot be above 23 hours."
-		print_usage
-	# check for an invalid hour portion of the time stamp
-	elif [ "$HOUR" -lt 0 ]; then
-		err " the time cannnot be below 0 hours."
-		print_usage
-	# check for an invalid min portion of the time stamp
-	elif [ "$MIN" -lt 0 ]; then
-		err "the minue must be between 0 and 59 minutes."
-		print_usage
-	#  check for an invalid min portion of the time stamp
-	elif [ "$MIN" -gt 59 ]; then
-		err "the time must be between 0 and 59 minutes."
-		print_usage
-	fi
-	
-	# check if the user is root (different home directory)
-	if [ $USER == "root" ]; then
-		# Create the backup directory for the new backup
-		(mkdir /${USER}/automatedBackups 2> /dev/null)
-		# Clear the directory and add a new backup once per day at the given mins and hours
-		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * ${2} rm -rf /${USER}/automatedBackups/*; tar -czf /${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz /${USER}/ ") | crontab -	
-	else
-		# Create the backup directory for the new backup
-		(mkdir /home/${USER}/automatedBackups 2> /dev/null)
-		# Clear the directory and add a new backup once per day at the given mins and hours
-		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} * * ${2} rm -rf /home/${USER}/automatedBackups/*; tar -czf  /home/${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz  /home/${USER}/ ") | crontab -
-	fi
-	
+	createCron
+
 }
 
 
@@ -250,37 +249,8 @@ monthly() {
 		err "time format must be: [0-9]+:[0-9]+. Not "${2}.""
 		print_usage
 	fi
-
-	# check for an invalid hour portion of the time stamp
-	if [ "$HOUR" -gt 23 ]; then
-		err " the time cannnot be above 23 hours."
-		print_usage
-	# check for an invalid hour portion of the time stamp
-	elif [ "$HOUR" -lt 0 ]; then
-		err " the time cannnot be below 0 hours."
-		print_usage
-	# check for an invalid min portion of the time stamp
-	elif [ "$MIN" -lt 0 ]; then
-		err "the minue must be between 0 and 59 minutes."
-		print_usage
-	#  check for an invalid min portion of the time stamp
-	elif [ "$MIN" -gt 59 ]; then
-		err "the time must be between 0 and 59 minutes."
-		print_usage
-	fi
 	
-	# check if the user is root (different home directory)
-	if [ $USER == "root" ]; then
-		# Create the backup directory for the new backup
-		(mkdir /${USER}/automatedBackups 2> /dev/null)
-		# Clear the directory and add a new backup once per day at the given mins and hours
-		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${2} * * rm -rf /${USER}/automatedBackups/*; tar -czf /${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz /${USER}/ ") | crontab -	
-	else
-		# Create the backup directory for the new backup
-		(mkdir /home/${USER}/automatedBackups 2> /dev/null)
-		# Clear the directory and add a new backup once per day at the given mins and hours
-		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${2} * * rm -rf /home/${USER}/automatedBackups/*; tar -czf  /home/${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz  /home/${USER}/ ") | crontab -
-	fi
+	createCron
 	
 }
 
@@ -302,7 +272,6 @@ yearly() {
 		# Using the internal field seperator (IFS) variable to split the time into hours and mins
 		IFS='/' read -ra DATE <<< ${2}
 		
-		echo "${2}"
 
 		# set the hour and min global variables
 		MONTH=${DATE[0]}
@@ -311,27 +280,6 @@ yearly() {
 	else
 		# end the script as the format is not correct
 		err "date format must be: [0-9]+/[0-9]+. Not "${2}.""
-		print_usage
-	fi
-
-	echo "${MONTH}"
-	echo "${DAY}"
-	
-	# check for an invalid day portion of the time stamp
-	if [ "$DAY" -gt 31 ]; then
-		err " the date cannnot be above 31 days."
-		print_usage
-	# check for an invalid day portion of the time stamp
-	elif [ "$DAY" -lt 1 ]; then
-		err " the date cannnot be less than the first day of the month."
-		print_usage
-	# check for an invalid month portion of the time stamp
-	elif [ "$MONTH" -lt 1 ]; then
-		err "the month must be between 1-12 (January to December)."
-		print_usage
-	#  check for an invalid month portion of the time stamp
-	elif [ "$MONTH" -gt 12 ]; then
-		err "the month must be between 1-12 (January to December)"
 		print_usage
 	fi
 	
@@ -350,36 +298,7 @@ yearly() {
 		print_usage
 	fi
 
-	# check for an invalid hour portion of the time stamp
-	if [ "$HOUR" -gt 23 ]; then
-		err " the time cannnot be above 23 hours."
-		print_usage
-	# check for an invalid hour portion of the time stamp
-	elif [ "$HOUR" -lt 0 ]; then
-		err " the time cannnot be below 0 hours."
-		print_usage
-	# check for an invalid min portion of the time stamp
-	elif [ "$MIN" -lt 0 ]; then
-		err "the minue must be between 0 and 59 minutes."
-		print_usage
-	#  check for an invalid min portion of the time stamp
-	elif [ "$MIN" -gt 59 ]; then
-		err "the time must be between 0 and 59 minutes."
-		print_usage
-	fi
-	
-	# check if the user is root (different home directory)
-	if [ $USER == "root" ]; then
-		# Create the backup directory for the new backup
-		(mkdir /${USER}/automatedBackups 2> /dev/null)
-		# Clear the directory and add a new backup once per day at the given mins and hours
-		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${DAY} ${MONTH} * rm -rf /${USER}/automatedBackups/*; tar -czf /${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz /${USER}/ ") | crontab -	
-	else
-		# Create the backup directory for the new backup
-		(mkdir /home/${USER}/automatedBackups 2> /dev/null)
-		# Clear the directory and add a new backup once per day at the given mins and hours
-		(crontab -l 2>/dev/null; echo "${MIN} ${HOUR} ${DAY} ${MONTH} * rm -rf /home/${USER}/automatedBackups/*; tar -czf  /home/${USER}/automatedBackups/${USER}_${HOUR}_${MIN}.tar.gz  /home/${USER}/ ") | crontab -
-	fi
+	createCron
 }
 
 main() {
