@@ -75,27 +75,39 @@ Examples with real input:
 
 #Create the actual cron job
 createCron() {
-	# check for an invalid day portion of the time stamp
-	if [ "$DAY" -gt 31 ]; then
-		err " the date cannnot be above 31 days."
-		print_usage
-	# check for an invalid day portion of the time stamp
-	elif [ "$DAY" -lt 1 ]; then
-		err " the date cannnot be less than the first day of the month."
-		print_usage
-	# check for an invalid month portion of the time stamp
-	elif [ "$MONTH" -lt 1 ]; then
-		err "the month must be between 1-12 (January to December)."
-		print_usage
-	#  check for an invalid month portion of the time stamp
-	elif [ "$MONTH" -gt 12 ]; then
-		err "the month must be between 1-12 (January to December)"
-		print_usage
+	
+	# If we set a month, check the month args
+	if [ "$MONTH" != '*' ]; then
+		# check for an invalid month below 0
+		if [ "$MONTH" -lt 0 ]; then	
+			err "the month must be between 1-12 (January to December)."
+			print_usage
+		#  check for an invalid month portion of the time stamp
+		elif [ "$MONTH" -gt 12 ]; then
+			err "the month must be between 1-12 (January to December)"
+			print_usage
+		fi
 	fi
 	
-	
+	# If we set a day, make sure it is a valid one
+	 if [ "$DAY" != '*' ] ; then
+                # check for an invalid day portion of the time stamp
+                if [ "$DAY" -gt 31 ]; then
+                        err " the date cannnot be above 31 days."
+                        print_usage
+                # check for an invalid day portion of the time stamp
+                elif [ "$DAY" -lt 1 ]; then
+                        err " the date cannnot be less than the first day of the month."
+                        print_usage
+		fi
+	fi
+
+	# go ahead and check hour and min variables. Those need to be set no matter what.
 	# check for an invalid hour portion of the time stamp
-	if [ "$HOUR" -gt 23 ]; then
+	if [ "$HOUR" == '*' ] || [ "$MIN" == '*' ]; then
+		err " must specify time in HOUR:MIN format "
+		print_usage
+	elif [ "$HOUR" -gt 23 ]; then
 		err " the time cannnot be above 23 hours."
 		print_usage
 	# check for an invalid hour portion of the time stamp
@@ -111,7 +123,7 @@ createCron() {
 		err "the time must be between 0 and 59 minutes."
 		print_usage
 	fi
-	
+
 	# check if the user is root (different home directory)
 	if [ $USER == "root" ]; then
 		# Create the backup directory for the new backup
@@ -250,6 +262,8 @@ monthly() {
 		print_usage
 	fi
 	
+	MONTH=${2}
+
 	createCron
 	
 }
